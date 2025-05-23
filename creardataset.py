@@ -4,19 +4,27 @@ import mediapipe as mp
 import xml.etree.ElementTree as ET
 import csv
 
+
 def obtener_etiqueta(xml_path):
     tree = ET.parse(xml_path)
     root = tree.getroot()
-    return root.find('object').find('name').text
+    return root.find("object").find("name").text
 
 
 def procesar_directorio(directorio, salida_csv):
     mp_hands_module = mp.solutions.hands
-    manos = mp_hands_module.Hands(static_image_mode=True, max_num_hands=1, min_detection_confidence=0.8)
+    manos = mp_hands_module.Hands(
+        static_image_mode=True, max_num_hands=1, min_detection_confidence=0.8
+    )
 
-    with open(salida_csv, 'w', newline='') as archivo_csv:
+    with open(salida_csv, "w", newline="") as archivo_csv:
         escritor = csv.writer(archivo_csv)
-        encabezado = [f'x{i}' for i in range(21)] + [f'y{i}' for i in range(21)] + [f'z{i}' for i in range(21)] + ['label']
+        encabezado = (
+            [f"x{i}" for i in range(21)]
+            + [f"y{i}" for i in range(21)]
+            + [f"z{i}" for i in range(21)]
+            + ["label"]
+        )
         escritor.writerow(encabezado)
 
         total = 0
@@ -24,7 +32,7 @@ def procesar_directorio(directorio, salida_csv):
         fallidas = 0
 
         for archivo in os.listdir(directorio):
-            if not archivo.lower().endswith(('.jpg', '.jpeg', '.png')):
+            if not archivo.lower().endswith((".jpg", ".jpeg", ".png")):
                 continue
 
             total += 1
@@ -58,9 +66,11 @@ def procesar_directorio(directorio, salida_csv):
                 print(f"[INFO] Mano no detectada en: {archivo}")
                 fallidas += 1
 
-        print(f"[RESUMEN] Total: {total}, Procesadas: {procesadas}, Fallidas: {fallidas}")
+        print(
+            f"[RESUMEN] Total: {total}, Procesadas: {procesadas}, Fallidas: {fallidas}"
+        )
 
 
-procesar_directorio('signlanguagevoc/train', 'train_data.csv')
-procesar_directorio('signlanguagevoc/valid', 'valid_data.csv')
-procesar_directorio('signlanguagevoc/test', 'test_data.csv')
+procesar_directorio("signlanguagevoc/train", "train_data.csv")
+procesar_directorio("signlanguagevoc/valid", "valid_data.csv")
+procesar_directorio("signlanguagevoc/test", "test_data.csv")

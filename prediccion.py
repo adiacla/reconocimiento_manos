@@ -33,10 +33,32 @@ mp_styles = mp.solutions.drawing_styles
 
 # Función para predecir
 def predecir(vector):
+    # Verificar que el vector tenga el tamaño correcto
+    if len(vector) != 63:  # 21 puntos * 3 coordenadas
+        raise ValueError(f"Vector debe tener 63 elementos, tiene {len(vector)}")
+
     entrada = scaler.transform([vector])
     pred = model.predict(entrada, verbose=0)
     clase_pred = np.argmax(pred[0])
     confianza = np.max(pred[0])
+
+    # DEBUGGING: Mostrar información detallada
+    print(f"=== DEBUG PREDICCIÓN ===")
+    print(
+        f"Predicción: {le.inverse_transform([clase_pred])[0]} (Confianza: {confianza:.3f})"
+    )
+
+    print(f"Top 3 predicciones:")
+
+    # Mostrar las 3 predicciones más probables
+    top_indices = np.argsort(pred[0])[-3:][::-1]
+    for i, idx in enumerate(top_indices):
+        clase_nombre = le.inverse_transform([idx])[0]
+        probabilidad = pred[0][idx]
+        print(f"  {i+1}. {clase_nombre}: {probabilidad:.3f}")
+
+    print("========================\n")
+
     return le.inverse_transform([clase_pred])[0], confianza
 
 
@@ -49,10 +71,15 @@ if not cap.isOpened():
     sys.exit(1)
 
 print("Presiona 'q', ESC o Ctrl+C para salir")
+print(f"Clases disponibles en el modelo: {le.classes_}")
 
 # Crear ventana una sola vez
 window_name = "Reconocimiento de Señas"
 cv.namedWindow(window_name, cv.WINDOW_AUTOSIZE)
+
+# Contador para controlar frecuencia de debugging
+frame_count = 0
+debug_frequency = 30  # Mostrar debug cada 30 frames (aprox 1 seg)
 
 try:
     while True:
@@ -60,6 +87,8 @@ try:
         if not ret:
             print("No se pudo capturar frame.")
             break
+
+        frame_count += 1
 
         # Voltear horizontalmente para efecto espejo
         frame = cv.flip(frame, 1)
@@ -85,9 +114,19 @@ try:
                 z_vals = [lm.z for lm in hand_landmarks.landmark]
                 vector = x_vals + y_vals + z_vals
 
-                # Hacer predicción
+                # Hacer predicción (solo debuggear cada ciertos frames)
                 try:
-                    signo, confianza = predecir(vector)
+                    # Activar debugging solo cada ciertos frames para no saturar la consola
+                    if frame_count % debug_frequency == 0:
+                        print(f"\n>>> FRAME {frame_count} - DEBUGGING ACTIVADO <<<")
+                        signo, confianza = predecir(vector)
+                    else:
+                        # Predicción sin debugging
+                        entrada = scaler.transform([vector])
+                        pred = model.predict(entrada, verbose=0)
+                        clase_pred = np.argmax(pred[0])
+                        confianza = np.max(pred[0])
+                        signo = le.inverse_transform([clase_pred])[0]
 
                     # Mostrar resultado solo si la confianza es alta
                     if confianza > 0.6:
@@ -107,7 +146,20 @@ try:
                         2,
                     )
 
+                    # Mostrar también el frame count y si debug está activo
+                    debug_texto = f"Frame: {frame_count} | Debug: {'ON' if frame_count % debug_frequency == 0 else 'OFF'}"
+                    cv.putText(
+                        frame_out,
+                        debug_texto,
+                        (10, 60),
+                        cv.FONT_HERSHEY_SIMPLEX,
+                        0.5,
+                        (255, 255, 255),
+                        1,
+                    )
+
                 except Exception as e:
+                    print(f"ERROR en predicción: {str(e)}")
                     cv.putText(
                         frame_out,
                         f"Error: {str(e)[:30]}",
@@ -131,7 +183,7 @@ try:
         # Mostrar instrucciones
         cv.putText(
             frame_out,
-            "Presiona Q para salir",
+            "Presiona Q para salir | D para debug continuo",
             (10, frame_out.shape[0] - 10),
             cv.FONT_HERSHEY_SIMPLEX,
             0.5,
@@ -142,10 +194,13 @@ try:
         # MOSTRAR EN LA VENTANA EXISTENTE
         cv.imshow(window_name, frame_out)
 
-        # Salir con 'q' o ESC
+        # Controles de teclado
         key = cv.waitKey(1) & 0xFF
         if key == ord("q") or key == 27:  # 'q' o ESC
             break
+        elif key == ord("d"):  # 'd' para activar debug continuo
+            debug_frequency = 1 if debug_frequency == 30 else 30
+            print(f"Debug frequency cambiado a: cada {debug_frequency} frames")
 
 except KeyboardInterrupt:
     print("\nInterrumpido por usuario")
