@@ -3,7 +3,7 @@ import cv2
 import mediapipe as mp
 
 # Ruta a tus imágenes
-directorio = 'signlanguagevoc/train'  # Cambia por 'valid' o 'test' si deseas
+directorio = "signlanguagevoc/test"  # Cambia por 'valid' o 'test' si deseas
 
 mp_hands = mp.solutions.hands
 mp_drawing = mp.solutions.drawing_utils
@@ -12,7 +12,7 @@ hands = mp_hands.Hands(static_image_mode=True, max_num_hands=1)
 imagenes_fallidas = []
 
 for archivo in os.listdir(directorio):
-    if not archivo.lower().endswith(('.jpg', '.jpeg', '.png')):
+    if not archivo.lower().endswith((".jpg", ".jpeg", ".png")):
         continue
 
     imagen_path = os.path.join(directorio, archivo)
@@ -39,7 +39,7 @@ for archivo in os.listdir(directorio):
         cv2.imshow("Sin mano", img_mostrar)
 
     key = cv2.waitKey(500)  # Espera 0.5 segundos entre imágenes
-    if key == ord('q'):
+    if key == ord("q"):
         break
 
 hands.close()

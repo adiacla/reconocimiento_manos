@@ -69,7 +69,7 @@ test_loss, test_acc = model.evaluate(X_test, y_test_enc)
 print(f"Precisión en test: {test_acc:.2f}")
 
 # Guardar modelo, scaler y encoder
-model.save("model_sign_language.keras")
+model.save("model_sign_language_2.keras")
 
 import joblib
 
